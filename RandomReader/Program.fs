@@ -1,15 +1,13 @@
 ﻿open System.Collections.Generic
 open Newtonsoft.Json
 
-// Learn more about F# at http://fsharp.net
-// See the 'F# Tutorial' project for more help.
 type read = {
     bib:int32;
     checkpoint: int32;
     time:int32; // Up to 24 days
 }
 
-let simulation checkpoints distance runnerCount spacing rnd = 
+let simulation checkpoints distance runnerCount spacing timed rnd =
     let runner bib awesomeness delay = seq {
         for c in [0 .. checkpoints] -> 
             let time = delay + int32 (float (distance * c) * (1.0 - awesomeness))
@@ -19,15 +17,10 @@ let simulation checkpoints distance runnerCount spacing rnd =
             ret
     }
 
-    let yieldRunnersByTime = seq {
-        //for time in [0 .. spacing .. System.Int32.MaxValue] ->
-        for r in [0 .. runnerCount] -> (r * spacing, runner r (rnd()) (r * spacing))
-    }
-
-    // while (fst rt < time) yield snd rt, enum.moveNext()
     seq {
         // Runners needs to be a collection that can be ammended at any time, 
         // and have elements removed from any index.
+        let stopwatch = System.Diagnostics.Stopwatch.StartNew()
         let runners = new System.Collections.Generic.List<bool ref * IEnumerator<read>>()
         let time = ref 0
         let runnersFinished = ref 0
@@ -35,6 +28,8 @@ let simulation checkpoints distance runnerCount spacing rnd =
         let nextTime = ref 1
 
         while (runnersFinished.Value < runnerCount) do
+            if timed then
+                System.Threading.Thread.Sleep(max 0 (time.Value - (int32 stopwatch.ElapsedMilliseconds)))
             System.Console.Title <- runners.Count.ToString()
             time := nextTime.Value
 
@@ -75,14 +70,14 @@ let simulation checkpoints distance runnerCount spacing rnd =
                 i := i.Value + 1 // Increment time by 1 ms
     }
     
-
 [<EntryPoint>]
 let main (argv : string[]) =
     let argl = Array.toList argv
     let checkpoints = ref 5
-    let distance = ref 10000 //  600000 // 10 minute
+    let distance = ref 600000 // 10 minute
     let runners = ref System.Int32.MaxValue
     let spacing = ref 1000
+    let timed = ref false
 
     let rec parse (lst : string list) = 
         if not lst.IsEmpty then 
@@ -99,30 +94,50 @@ let main (argv : string[]) =
             | "/s" ->
                 parse lst.Tail.Tail
                 spacing := int32 lst.Tail.Head
-            | _ -> failwith "usage"
+            | "/t" ->
+                parse lst.Tail
+                timed := true
+            | _ -> failwith ("Invalid parameter: " + lst.Head)
     
-    parse argl
+    try
+        parse argl
 
-    let rnd = 
-        let rng = new System.Random(0)
-        let next() = 
-            rng.NextDouble()
-        next
+        let rnd =
+            let rng = new System.Random(0)
+            let next() =
+                rng.NextDouble()
+            next
         
 
-    let race = simulation checkpoints.Value distance.Value runners.Value spacing.Value rnd
-    let ser = JsonSerializer.Create();
-    let tojson obj = 
-        let sw = new System.IO.StringWriter()
-        ser.Serialize(sw, obj)
-        let ret = sw.ToString()
-        sw.Dispose()
-        ret
+        let race = simulation checkpoints.Value distance.Value runners.Value spacing.Value timed.Value rnd
+        let ser = JsonSerializer.Create();
+        let tojson obj =
+            let sw = new System.IO.StringWriter()
+            ser.Serialize(sw, obj)
+            let ret = sw.ToString()
+            sw.Dispose()
+            ret
 
-    for read in race do 
-        let json = tojson read
-        json |> ignore 
-        printfn "%s" json
+        for read in race do
+            let json = tojson read
+            json |> ignore
+            printfn "%s" json
 
-    System.Console.ReadKey(true) |> ignore
-    0 // return an integer exit code
+        System.Console.ReadKey(true) |> ignore
+        0 // return an integer exit code
+    with
+        | ex ->
+            System.Console.Error.WriteLine(ex.Message);
+            System.Console.WriteLine("""
+Usage: RandomReader [/c <checkpoints>] [/d <distance>] [/r <runners>]
+                    [/s <spacing>] [/t]
+
+/c <checkpoints> -  Default: 5. Number of checkpoints, including finish, the
+                    race should include.
+/d <distance>    -  Default: 600000. Distance in any unit between checkpoints.
+/r <runners>     -  Default: 2147483617. Number of runners in the race.
+/s <spacing>     -  Default: 1000. Interval in time between runners crossing
+                    the start line.
+/t               -  Runs the simulation in real-time, assuming 1 ms per time.
+            """)
+            1
