@@ -4,4 +4,4 @@ RUN mono nuget.exe restore
 RUN xbuild /p:BuildWithMono="true" FSharpPoc.sln
 
 CMD []
-ENTRYPOINT ["mono", "GenerateRace/bin/Debug/RandomReader.exe"]
+ENTRYPOINT ["mono", "RandomReader/bin/Debug/RandomReader.exe"]
