@@ -10,6 +10,6 @@ fi
 
 git pull origin
 
-docker build -t random-reader
+docker build -t random-reader .
 
 docker run --rm random-reader /r 5000 /c 3
