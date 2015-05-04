@@ -1,6 +1,5 @@
 ﻿open System.Collections.Generic
 open Newtonsoft.Json
-open FSharp.Data
 
 // Learn more about F# at http://fsharp.net
 // See the 'F# Tutorial' project for more help.
@@ -10,9 +9,8 @@ type read = {
     time:int32; // Up to 24 days
 }
 
-let simulation checkpoints distance (runnerCount : int32) writeline rnd = 
-    let spacing = 1000
-    let runner bib (awesomeness : float) delay = seq {
+let simulation checkpoints distance runnerCount spacing rnd = 
+    let runner bib awesomeness delay = seq {
         for c in [0 .. checkpoints] -> 
             let time = delay + int32 (float (distance * c) * (1.0 - awesomeness))
             let ret = { bib=bib; checkpoint=c; time=time }
@@ -21,7 +19,12 @@ let simulation checkpoints distance (runnerCount : int32) writeline rnd =
             ret
     }
 
+    let yieldRunnersByTime = seq {
+        //for time in [0 .. spacing .. System.Int32.MaxValue] ->
+        for r in [0 .. runnerCount] -> (r * spacing, runner r (rnd()) (r * spacing))
+    }
 
+    // while (fst rt < time) yield snd rt, enum.moveNext()
     seq {
         // Runners needs to be a collection that can be ammended at any time, 
         // and have elements removed from any index.
@@ -78,8 +81,9 @@ let main (argv : string[]) =
     let argl = Array.toList argv
     let checkpoints = ref 5
     let distance = ref 10000 //  600000 // 10 minute
-    let runners = ref 10 //System.Int32.MaxValue
-    
+    let runners = ref System.Int32.MaxValue
+    let spacing = ref 1000
+
     let rec parse (lst : string list) = 
         if not lst.IsEmpty then 
             match lst.Head with 
@@ -92,13 +96,12 @@ let main (argv : string[]) =
             | "/r" ->
                 parse lst.Tail.Tail
                 runners := int32 lst.Tail.Head
+            | "/s" ->
+                parse lst.Tail.Tail
+                spacing := int32 lst.Tail.Head
             | _ -> failwith "usage"
     
     parse argl
-
-    let writeline (line:string) =
-        System.Console.Out.WriteLine(line) |> ignore
-        null
 
     let rnd = 
         let rng = new System.Random(0)
@@ -107,7 +110,7 @@ let main (argv : string[]) =
         next
         
 
-    let race = simulation checkpoints.Value distance.Value runners.Value writeline rnd
+    let race = simulation checkpoints.Value distance.Value runners.Value spacing.Value rnd
     let ser = JsonSerializer.Create();
     let tojson obj = 
         let sw = new System.IO.StringWriter()
