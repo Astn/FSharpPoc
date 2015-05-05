@@ -1,11 +1,13 @@
 ﻿open System.Collections.Generic
 open Newtonsoft.Json
+open Microsoft.VisualStudio.TestTools.UnitTesting
 
 type read = {
     bib:int32;
     checkpoint: int32;
     time:int32; // Up to 24 days
 }
+
 
 let simulation checkpoints distance runnerCount spacing timed rnd =
     let runner bib awesomeness delay = seq {
@@ -70,7 +72,6 @@ let simulation checkpoints distance runnerCount spacing timed rnd =
                 i := i.Value + 1 // Increment time by 1 ms
     }
     
-[<EntryPoint>]
 let main (argv : string[]) =
     let argl = Array.toList argv
     let checkpoints = ref 5
@@ -141,3 +142,26 @@ Usage: RandomReader [/c <checkpoints>] [/d <distance>] [/r <runners>]
 /t               -  Runs the simulation in real-time, assuming 1 ms per time.
             """)
             1
+
+
+[<TestClass>]
+type randomReaderTests() = 
+    let eq a b = JsonConvert.SerializeObject(a) = JsonConvert.SerializeObject(b)
+ 
+    [<TestInitialize>]
+    member x.setup() =
+        0|>ignore
+
+    [<TestMethod>]
+    member x.simulationTest() =
+        let rnd() = 0.5        
+        let sim = simulation 1 1 1 1 false rnd
+        let arr = Seq.toList(sim)
+        let expected = [{bib = 1; checkpoint = 0; time = 1};{bib = 1;checkpoint = 1; time = 1}]
+        Assert.IsTrue(eq arr expected, "One Runner Test");
+
+
+[<EntryPoint>]
+let main2 (argv : string[]) = 
+    
+    main argv
