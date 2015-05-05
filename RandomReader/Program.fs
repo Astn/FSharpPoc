@@ -1,6 +1,6 @@
 ﻿open System.Collections.Generic
 open Newtonsoft.Json
-open Microsoft.VisualStudio.TestTools.UnitTesting
+//open Microsoft.VisualStudio.TestTools.UnitTesting
 
 type read = {
     bib:int32;
@@ -143,23 +143,23 @@ Usage: RandomReader [/c <checkpoints>] [/d <distance>] [/r <runners>]
             """)
             1
 
-
-[<TestClass>]
-type randomReaderTests() = 
-    let eq a b = JsonConvert.SerializeObject(a) = JsonConvert.SerializeObject(b)
- 
-    [<TestInitialize>]
-    member x.setup() =
-        0|>ignore
-
-    [<TestMethod>]
-    member x.simulationTest() =
-        let rnd() = 0.5        
-        let sim = simulation 1 1 1 1 false rnd
-        let arr = Seq.toList(sim)
-        let expected = [{bib = 1; checkpoint = 0; time = 1};{bib = 1;checkpoint = 1; time = 1}]
-        Assert.IsTrue(eq arr expected, "One Runner Test");
-
+//
+//[<TestClass>]
+//type randomReaderTests() = 
+//    let eq a b = JsonConvert.SerializeObject(a) = JsonConvert.SerializeObject(b)
+// 
+//    [<TestInitialize>]
+//    member x.setup() =
+//        0|>ignore
+//
+//    [<TestMethod>]
+//    member x.simulationTest() =
+//        let rnd() = 0.5        
+//        let sim = simulation 1 1 1 1 false rnd
+//        let arr = Seq.toList(sim)
+//        let expected = [{bib = 1; checkpoint = 0; time = 1};{bib = 1;checkpoint = 1; time = 1}]
+//        Assert.IsTrue(eq arr expected, "One Runner Test");
+//
 
 [<EntryPoint>]
 let main2 (argv : string[]) = 
