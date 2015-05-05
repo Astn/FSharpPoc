@@ -89,18 +89,18 @@ let defaults = { checkpoints = 5; distance = 60000; runners = System.Int32.MaxVa
 let rec parseArgs (lst : string list) (defaults:parseResult) : parseResult = 
     match defaults with
     | ParseError message -> defaults
-    | Args def-> 
+    | Args prev-> 
         match lst with 
         | "/c"::tail -> 
-            parseArgs tail.Tail <| Args {def with checkpoints = int32 tail.Head}
+            parseArgs tail.Tail <| Args {prev with checkpoints = int32 tail.Head}
         | "/d"::tail ->
-            parseArgs tail.Tail <| Args {def with distance = int32 tail.Head}
+            parseArgs tail.Tail <| Args {prev with distance = int32 tail.Head}
         | "/r"::tail ->
-            parseArgs tail.Tail <| Args {def with runners = int32 tail.Head}
+            parseArgs tail.Tail <| Args {prev with runners = int32 tail.Head}
         | "/s"::tail ->
-            parseArgs tail.Tail <| Args {def with spacing = int32 tail.Head}
+            parseArgs tail.Tail <| Args {prev with spacing = int32 tail.Head}
         | "/t"::tail ->
-            parseArgs tail.Tail <| Args {def with timed = true }
+            parseArgs tail.Tail <| Args {prev with timed = true }
         | [] -> defaults
         | _ -> ParseError ("Invalid parameter: " + lst.Head)
 
@@ -122,6 +122,7 @@ let main (argv : string[]) =
     match args with
     | ParseError message -> 
         System.Console.WriteLine message
+        System.Console.WriteLine usage
         1
     | Args options ->
         let rnd =
